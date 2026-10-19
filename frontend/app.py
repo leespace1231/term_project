@@ -20,8 +20,7 @@ try:
 except Exception:
     BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
 
-st.set_page_config(page_title="AI·데이터 분석 통합 서비스", page_icon="🤖", layout="wide")
-
+# 페이지 설정은 한 번만 선언
 st.set_page_config(page_title="AI·데이터 분석 통합 서비스", page_icon="🤖", layout="wide")
 
 
