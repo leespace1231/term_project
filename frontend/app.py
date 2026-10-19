@@ -9,7 +9,18 @@ import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
-BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+# Streamlit Secrets 우선 확인, 없으면 환경변수 및 기본값 사용
+try:
+    BACKEND = (
+        st.secrets.get("BACKEND_URL") 
+        or st.secrets.get("API_URL") 
+        or os.getenv("BACKEND_URL", "http://localhost:8000")
+    )
+except Exception:
+    BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+st.set_page_config(page_title="AI·데이터 분석 통합 서비스", page_icon="🤖", layout="wide")
 
 st.set_page_config(page_title="AI·데이터 분석 통합 서비스", page_icon="🤖", layout="wide")
 
