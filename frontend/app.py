@@ -199,15 +199,19 @@ with tabs[2]:
 
         st.divider()
         st.subheader("🤖 후보 모델 비교 (이진 분류)")
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         target = c1.text_input("타깃 컬럼", value="Survived")
-        test_file = c2.selectbox("테스트 데이터 (타깃 컬럼이 있으면 최종 평가)", ["(없음)"] + files)
+        test_file = c2.selectbox("테스트 데이터 (test.csv)", ["(없음)"] + files)
+        ans_opts = ["(없음)"] + files
+        ans_idx = ans_opts.index("genderclassmodel.csv") if "genderclassmodel.csv" in files else 0
+        answer_file = c3.selectbox("정답 파일 (genderclassmodel.csv)", ans_opts, index=ans_idx)
         if st.button("모델 학습·비교 실행"):
             with st.spinner("KNN / 로지스틱 / 나이브베이즈 / 결정트리 / 랜덤포레스트 / XGBoost 교차검증 중..."):
                 try:
                     st.session_state.ml = api("POST", "/ml/run", timeout=600, json={
                         "train_file": train_file,
                         "test_file": None if test_file == "(없음)" else test_file,
+                        "answer_file": None if answer_file == "(없음)" else answer_file,
                         "target": target})
                 except Exception as e:  # noqa: BLE001
                     st.error(e)
@@ -226,7 +230,7 @@ with tabs[2]:
                 show_metrics(f"최종 모델 test.csv 성과 ({res.get('test_rows')}행)", res["test_metrics"])
             if res.get("predictions"):
                 pred_df = pd.DataFrame(res["predictions"])
-                st.write(f"**test.csv 예측 결과 ({len(pred_df)}행)** — 정답이 없는 test.csv는 성과지표 대신 예측값을 제시")
+                st.write(f"**test.csv 예측 결과 ({len(pred_df)}행)**")
                 st.dataframe(pred_df)
                 st.download_button("예측 결과 CSV 다운로드", pred_df.to_csv(index=False).encode("utf-8-sig"),
                                    file_name="test_predictions.csv", mime="text/csv")
