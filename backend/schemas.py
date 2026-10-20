@@ -40,6 +40,7 @@ class WebhookAck(BaseModel):
 class MLRequest(BaseModel):
     train_file: str
     test_file: Optional[str] = None
+    answer_file: Optional[str] = None  # test.csv의 정답 파일 (예: genderclassmodel.csv)
     target: str
 
 

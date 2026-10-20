@@ -112,6 +112,14 @@ def data_eda(file: str):
 def ml_run(req: MLRequest):
     train = load_csv(req.train_file)
     test = load_csv(req.test_file) if req.test_file else None
+    if test is not None and req.answer_file:
+        answer = load_csv(req.answer_file)
+        id_col = next((c for c in test.columns
+                       if c in answer.columns and c.lower() in ("passengerid", "id")), None)
+        if id_col is None or req.target not in answer.columns:
+            raise HTTPException(400, "정답 파일에 test.csv와 공통인 ID 컬럼(PassengerId)과 타깃 컬럼이 있어야 합니다.")
+        test = test.drop(columns=[req.target], errors="ignore").merge(
+            answer[[id_col, req.target]], on=id_col, how="left")
     try:
         return ml.run_classification(train, req.target, test)
     except (ValueError, KeyError) as e:
