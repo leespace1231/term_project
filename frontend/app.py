@@ -1,7 +1,10 @@
 """View: Streamlit 프론트엔드"""
 import base64
 import os
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import pandas as pd
 import requests
@@ -9,19 +12,45 @@ import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
+BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
 
-# Streamlit Secrets 우선 확인, 없으면 환경변수 및 기본값 사용
-try:
-    BACKEND = (
-        st.secrets.get("BACKEND_URL") 
-        or st.secrets.get("API_URL") 
-        or os.getenv("BACKEND_URL", "http://localhost:8000")
-    )
-except Exception:
-    BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
-
-# 페이지 설정은 한 번만 선언
 st.set_page_config(page_title="AI·데이터 분석 통합 서비스", page_icon="🤖", layout="wide")
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def _backend_alive() -> bool:
+    try:
+        return requests.get(f"{BACKEND}/health", timeout=1).ok
+    except Exception:  # noqa: BLE001
+        return False
+
+
+@st.cache_resource(show_spinner="백엔드(FastAPI)를 시작하는 중...")
+def start_embedded_backend() -> str:
+    """서버를 1대만 쓸 수 있는 Streamlit Community Cloud에서는
+    같은 컨테이너 안에서 FastAPI를 함께 띄운다. 이미 떠 있으면(로컬 개발 등) 그대로 사용."""
+    if _backend_alive():
+        return "already-running"
+    env = os.environ.copy()
+    for key in ("GEMINI_API_KEY", "GEMINI_MODEL"):
+        try:  # secrets.toml이 없으면 st.secrets 접근 시 예외가 나므로 방어
+            env.setdefault(key, str(st.secrets[key]))
+        except Exception:  # noqa: BLE001
+            pass
+    subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8000"],
+        cwd=str(ROOT), env=env,
+    )
+    for _ in range(60):
+        if _backend_alive():
+            return "started"
+        time.sleep(0.5)
+    return "failed"
+
+
+if BACKEND.startswith(("http://localhost", "http://127.0.0.1")):
+    start_embedded_backend()
 
 
 def api(method: str, path: str, timeout: int = 120, **kwargs):
