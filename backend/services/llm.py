@@ -4,7 +4,8 @@ import os
 from google import genai
 from google.genai import types
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# 지원되는 안정적인 정식 모델명으로 변경 (환경 변수가 없을 경우 fallback)
+MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 _client = None
 
 REPLY_SYSTEM = (
